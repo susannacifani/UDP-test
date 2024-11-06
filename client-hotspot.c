@@ -46,23 +46,19 @@ int main() {
 
     printf("Client in ascolto sulla porta %d e inoltra su %d...\n", SERVER_PORT, UNITY_PORT);
 
-
     while (1) {
         int recv_size = recvfrom(client_socket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&server_addr, &server_addr_len);
         if (recv_size == SOCKET_ERROR) {
             printf("Errore nella ricezione: %d\n", WSAGetLastError());
             break;
         } else {
-            buffer[recv_size] = '\0'; 
-            // printf("Ricevuto dal server: %s\n", buffer);
+            buffer[recv_size] = '\0';
 
-            // Invia a Unity sulla porta 5052
-            if (sendto(client_socket, buffer, recv_size, 0, (struct sockaddr*)&unity_addr, sizeof(unity_addr)) == SOCKET_ERROR) {
-                printf("Errore nell'inoltro a Unity: %d\n", WSAGetLastError());
-                break;
-            } else {
-                printf(buffer);
-            }
+            // Invia i dati a Unity sulla porta 5052 senza fermarsi in caso di errore
+            sendto(client_socket, buffer, recv_size, 0, (struct sockaddr*)&unity_addr, sizeof(unity_addr));
+
+            // Stampa a console il buffer ricevuto e trasmesso
+            printf("%s", buffer);
         }
     }
 
