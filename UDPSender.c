@@ -1,68 +1,75 @@
-#define WIN32_LEAN_AND_MEAN
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <stdio.h>
-#include <windows.h> 
+#include <winsock2.h>
 
-#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "ws2_32.lib")
 
-#define SERVER_PORT 5052
-#define BUFFER_SIZE 512
+#define SERVER_PORT 5150
+#define UNITY_PORT 5052
+#define BUFFER_SIZE 1024
 
 int main() {
-    WSADATA wsaData;
-    SOCKET serverSocket;
-    struct sockaddr_in serverAddr;
+    WSADATA wsa;
+    SOCKET client_socket;
+    struct sockaddr_in server_addr, unity_addr;
     char buffer[BUFFER_SIZE];
+    int server_addr_len = sizeof(server_addr);
 
-    // Inizializza Winsock
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        printf("Errore nella inizializzazione di Winsock.\n");
+    // Inizializzazione Winsock
+    printf("Inizializzazione di Winsock...\n");
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        printf("Errore di inizializzazione: %d\n", WSAGetLastError());
         return 1;
     }
 
-    serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (serverSocket == INVALID_SOCKET) {
+    // Creazione socket UDP per ricevere i dati
+    if ((client_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
         printf("Errore nella creazione del socket: %d\n", WSAGetLastError());
         WSACleanup();
         return 1;
     }
 
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY; 
-    serverAddr.sin_port = htons(SERVER_PORT);
+    // Configurazione dell'indirizzo per ricevere dati dal server sulla porta 5150
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(SERVER_PORT);
 
-    printf("Server attivo sulla porta %d...\n", SERVER_PORT);
-
-
-    FILE *pipe = popen("rs232kk01.exe", "r");
-    if (pipe == NULL) {
-        printf("Errore nell'aprire la pipe verso il generatore di stringhe.\n");
-        closesocket(serverSocket);
+    if (bind(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+        printf("Errore nel bind del socket: %d\n", WSAGetLastError());
+        closesocket(client_socket);
         WSACleanup();
         return 1;
     }
 
-    while (1) {
-        if (fgets(buffer, BUFFER_SIZE, pipe) != NULL) {
-            struct sockaddr_in clientAddr;
-            clientAddr.sin_family = AF_INET;
-            clientAddr.sin_port = htons(SERVER_PORT);
-            clientAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    // Configurazione dell'indirizzo di destinazione per Unity sulla porta 5052
+    unity_addr.sin_family = AF_INET;
+    unity_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); // Inoltra a Unity su localhost
+    unity_addr.sin_port = htons(UNITY_PORT);
 
-            if (sendto(serverSocket, buffer, (int)strlen(buffer), 0, (struct sockaddr*)&clientAddr, sizeof(clientAddr)) == SOCKET_ERROR) {
-                printf("Errore nell'invio del messaggio: %d\n", WSAGetLastError());
-            } else {
-                printf(buffer);
-            }
+    printf("Client in ascolto sulla porta %d e inoltra su %d...\n", SERVER_PORT, UNITY_PORT);
+
+    // Loop di ricezione e inoltro
+    while (1) {
+        int recv_size = recvfrom(client_socket, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&server_addr, &server_addr_len);
+        if (recv_size == SOCKET_ERROR) {
+            printf("Errore nella ricezione: %d\n", WSAGetLastError());
+            break;
         } else {
-            printf("Errore nella lettura dalla pipe.\n");
-            break; // Esce dal ciclo interno se c'è un errore nella lettura della pipe
+            buffer[recv_size] = '\0'; // Aggiunge il terminatore di stringa
+            printf("Ricevuto dal server: %s\n", buffer);
+
+            // Invia i dati a Unity sulla porta 5052
+            if (sendto(client_socket, buffer, recv_size, 0, (struct sockaddr*)&unity_addr, sizeof(unity_addr)) == SOCKET_ERROR) {
+                printf("Errore nell'inoltro a Unity: %d\n", WSAGetLastError());
+                break;
+            } else {
+                printf("Inoltrato a Unity sulla porta %d: %s\n", UNITY_PORT, buffer);
+            }
         }
     }
 
-    pclose(pipe);
-    closesocket(serverSocket);
+    // Chiusura del socket e pulizia di Winsock
+    closesocket(client_socket);
     WSACleanup();
 
     return 0;
