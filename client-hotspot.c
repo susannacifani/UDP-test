@@ -47,7 +47,7 @@ int main() {
             break;
         } else {
             buffer[recv_size] = '\0';
-            printf("Risposta del server: %s\n", buffer);
+            printf(buffer);
         }
     }
 
