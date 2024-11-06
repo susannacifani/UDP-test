@@ -2,7 +2,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
-#include <windows.h>
+#include <windows.h> // Per Sleep()
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -15,13 +15,13 @@ int main() {
     struct sockaddr_in serverAddr;
     char buffer[BUFFER_SIZE];
 
-    // inizializza Winsock
+    // Inizializza Winsock
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         printf("Errore nella inizializzazione di Winsock.\n");
         return 1;
     }
 
-    // crea socket 
+    // Crea un socket UDP
     serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (serverSocket == INVALID_SOCKET) {
         printf("Errore nella creazione del socket: %d\n", WSAGetLastError());
@@ -29,40 +29,43 @@ int main() {
         return 1;
     }
 
+    // Configura l'indirizzo del server
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr("10.90.71.142"); // IP locale
+    serverAddr.sin_addr.s_addr = inet_addr("192.168.137.1"); // Sostituisci con il tuo IP locale
     serverAddr.sin_port = htons(SERVER_PORT);
 
     printf("Server attivo sulla porta %d...\n", SERVER_PORT);
 
-    FILE *pipe = popen("generator.exe", "r");
+    // Apri la pipe per leggere da `generator.exe`
+    FILE *pipe = popen("rs232kk01.exe", "r");
     if (pipe == NULL) {
-        printf("Errore nell'aprire la pipe.\n");
+        printf("Errore nell'aprire la pipe verso il generatore di stringhe.\n");
         closesocket(serverSocket);
         WSACleanup();
         return 1;
     }
 
-    // inizia a inviare le stringhe 
+    // Inizia a inviare le stringhe generate in modo continuo
     while (1) {
         if (fgets(buffer, BUFFER_SIZE, pipe) != NULL) {
             struct sockaddr_in clientAddr;
             clientAddr.sin_family = AF_INET;
             clientAddr.sin_port = htons(SERVER_PORT);
-            clientAddr.sin_addr.s_addr = inet_addr("10.90.255.255"); // Broadcast su rete locale
+            clientAddr.sin_addr.s_addr = inet_addr("192.168.137.41"); // Broadcast sulla tua rete locale
 
             if (sendto(serverSocket, buffer, (int)strlen(buffer), 0, (struct sockaddr*)&clientAddr, sizeof(clientAddr)) == SOCKET_ERROR) {
                 printf("Errore nell'invio del messaggio: %d\n", WSAGetLastError());
             } else {
-                printf("Inviato al client: %s", buffer);
+                printf(buffer);
             }
         } else {
             printf("Errore nella lettura dalla pipe.\n");
             break;
         }
-        Sleep(1000);
+        
     }
 
+    // Chiudi la pipe e il socket
     pclose(pipe);
     closesocket(serverSocket);
     WSACleanup();
