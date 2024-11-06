@@ -2,7 +2,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
-#include <windows.h> // Per Sleep()
+#include <windows.h> 
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -31,12 +31,11 @@ int main() {
 
     // Configura l'indirizzo del server
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr("192.168.137.1"); // Sostituisci con il tuo IP locale
+    serverAddr.sin_addr.s_addr = inet_addr("192.168.137.1"); // IP locale
     serverAddr.sin_port = htons(SERVER_PORT);
 
     printf("Server attivo sulla porta %d...\n", SERVER_PORT);
 
-    // Apri la pipe per leggere da `generator.exe`
     FILE *pipe = popen("rs232kk01.exe", "r");
     if (pipe == NULL) {
         printf("Errore nell'aprire la pipe verso il generatore di stringhe.\n");
@@ -45,13 +44,12 @@ int main() {
         return 1;
     }
 
-    // Inizia a inviare le stringhe generate in modo continuo
     while (1) {
         if (fgets(buffer, BUFFER_SIZE, pipe) != NULL) {
             struct sockaddr_in clientAddr;
             clientAddr.sin_family = AF_INET;
             clientAddr.sin_port = htons(SERVER_PORT);
-            clientAddr.sin_addr.s_addr = inet_addr("192.168.137.41"); // Broadcast sulla tua rete locale
+            clientAddr.sin_addr.s_addr = inet_addr("192.168.137.41"); 
 
             if (sendto(serverSocket, buffer, (int)strlen(buffer), 0, (struct sockaddr*)&clientAddr, sizeof(clientAddr)) == SOCKET_ERROR) {
                 printf("Errore nell'invio del messaggio: %d\n", WSAGetLastError());
@@ -65,7 +63,6 @@ int main() {
         
     }
 
-    // Chiudi la pipe e il socket
     pclose(pipe);
     closesocket(serverSocket);
     WSACleanup();
