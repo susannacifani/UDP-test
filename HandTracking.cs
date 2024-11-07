@@ -25,20 +25,11 @@ public class HandTracking : MonoBehaviour
         string[] points = data.Split(',');
         //print(points[0]);
 
+        float Gx = float.Parse(points[points.Length - 3]); //Gx
+        float Gy = float.Parse(points[points.Length - 2]); //Gy
+        float Gz = float.Parse(points[points.Length - 1]); //Gz
 
-        //if (data.GetType() == typeof(string))
-            //print("same");
-        //print(data);
-        //stampa da points[6]
-        //print(points[11]); //ogni 5 spazi c'è un numero
-        /*
-            for (int i = 0; i < 40; i++)
-        {
-            print(points[i]);
-        }
-        */
-
-
+        cube.transform.rotation = Quaternion.Euler(Gx, Gy, Gz);
 
 
         /*
@@ -60,4 +51,6 @@ public class HandTracking : MonoBehaviour
 
 
     }
+
+
 }
