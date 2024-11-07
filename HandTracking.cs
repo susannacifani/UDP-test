@@ -7,9 +7,10 @@ public class HandTrackingAccelerometer : MonoBehaviour
     public UDPReceiver udpReceiver;
     public GameObject cube;
 
-    private float accelerometerScaleFactor = 0.00005f;
+    private float accelerometerScaleFactor = 0.0002f; // Incrementa per un movimento più rapido
     private Vector3 velocity = Vector3.zero;
-    private float friction = 0.98f; // Fattore di attrito per rallentare la velocità
+    private float friction = 0.99f; // Riduci leggermente l'attrito per farlo rallentare meno
+    private float maxSpeed = 3.0f; // Aumenta il limite di velocità per più reattività
 
     void Update()
     {
@@ -35,21 +36,21 @@ public class HandTrackingAccelerometer : MonoBehaviour
         float accelZ = Az * accelerometerScaleFactor;
 
         // Applicare una soglia per ignorare piccoli rumori
-        float threshold = 0.05f;
+        float threshold = 0.02f; // Abbassa leggermente il valore di soglia per movimenti più sensibili
         if (Mathf.Abs(accelX) < threshold) accelX = 0;
         if (Mathf.Abs(accelY) < threshold) accelY = 0;
         if (Mathf.Abs(accelZ) < threshold) accelZ = 0;
 
         Vector3 acceleration = new Vector3(accelX, accelY, accelZ);
 
-        // Integrare l'accelerazione per ottenere la velocità
-        velocity += acceleration * Time.deltaTime;
+        // Aggiungi un boost alla velocità
+        float speedBoost = 1.5f;
+        velocity += acceleration * Time.deltaTime * speedBoost;
 
         // Applicare l'attrito
         velocity *= friction;
 
         // Limitare la velocità massima
-        float maxSpeed = 1.0f;
         velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
 
         // Spostare il cubo usando la velocità calcolata
