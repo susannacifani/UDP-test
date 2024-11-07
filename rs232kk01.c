@@ -132,6 +132,7 @@ int n;
 
 //mode_str=baud=460800 data=8 parity=n stop=1 xon=off to=off odsr=off dtr=on rts=onOpen COM5
 int main() {
+    g(4);
     o(5);
     //g(4);
     b();
