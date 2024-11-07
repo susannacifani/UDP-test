@@ -1,60 +1,58 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using System;
 
-public class HandTracking : MonoBehaviour
+public class HandTrackingAccelerometer : MonoBehaviour
 {
     public UDPReceiver udpReceiver;
     public GameObject cube;
 
-    // Fattore di scala per il giroscopio (ipotizzando ±250°/s)
-    private float gyroscopeScaleFactor = 0.00763f;
-
-    // Variabili di accumulo per la rotazione (in gradi)
-    private float accumulatedRotationX = 0f;
-    private float accumulatedRotationY = 0f;
-    private float accumulatedRotationZ = 0f;
+    private float accelerometerScaleFactor = 0.00005f;
+    private Vector3 velocity = Vector3.zero;
+    private float friction = 0.98f; // Fattore di attrito per rallentare la velocità
 
     void Update()
     {
         string data = udpReceiver.data;
 
-        // Verifica se i dati non sono nulli o vuoti
         if (string.IsNullOrEmpty(data))
             return;
 
-        // Rimuovere i caratteri iniziali e finali (assumendo che siano parentesi o altri caratteri)
         data = data.Remove(0, 1);
         data = data.Remove(data.Length - 1, 1);
 
-        // Dividere i dati in base alla virgola
         string[] points = data.Split(',');
 
-        // Assicurarsi che ci siano abbastanza dati per leggere il giroscopio
         if (points.Length < 3)
             return;
 
-        // Leggere i valori grezzi del giroscopio (Gx, Gy, Gz)
-        float Gx = float.Parse(points[points.Length - 3]);
-        float Gy = float.Parse(points[points.Length - 2]);
-        float Gz = float.Parse(points[points.Length - 1]);
+        float Ax = float.Parse(points[points.Length - 8]);
+        float Ay = float.Parse(points[points.Length - 7]);
+        float Az = float.Parse(points[points.Length - 6]);
 
-        // Convertire i valori del giroscopio in gradi per secondo
-        float gyroX = Gx * gyroscopeScaleFactor;
-        float gyroY = Gy * gyroscopeScaleFactor;
-        float gyroZ = Gz * gyroscopeScaleFactor;
+        float accelX = Ax * accelerometerScaleFactor;
+        float accelY = Ay * accelerometerScaleFactor;
+        float accelZ = Az * accelerometerScaleFactor;
 
-        // Integrare i valori del giroscopio per ottenere l'angolo di rotazione cumulativo (in gradi)
-        accumulatedRotationX += gyroX * Time.deltaTime;
-        accumulatedRotationY += gyroY * Time.deltaTime;
-        accumulatedRotationZ += gyroZ * Time.deltaTime;
+        // Applicare una soglia per ignorare piccoli rumori
+        float threshold = 0.05f;
+        if (Mathf.Abs(accelX) < threshold) accelX = 0;
+        if (Mathf.Abs(accelY) < threshold) accelY = 0;
+        if (Mathf.Abs(accelZ) < threshold) accelZ = 0;
 
-        // Creare la rotazione target usando i valori integrati
-        Quaternion targetRotation = Quaternion.Euler(accumulatedRotationX, accumulatedRotationY, accumulatedRotationZ);
+        Vector3 acceleration = new Vector3(accelX, accelY, accelZ);
 
-        // Applicare la rotazione al cubo
-        cube.transform.rotation = targetRotation;
+        // Integrare l'accelerazione per ottenere la velocità
+        velocity += acceleration * Time.deltaTime;
+
+        // Applicare l'attrito
+        velocity *= friction;
+
+        // Limitare la velocità massima
+        float maxSpeed = 1.0f;
+        velocity = Vector3.ClampMagnitude(velocity, maxSpeed);
+
+        // Spostare il cubo usando la velocità calcolata
+        cube.transform.Translate(velocity * Time.deltaTime);
     }
 }
