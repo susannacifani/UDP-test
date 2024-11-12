@@ -43,7 +43,7 @@ public class HandTracking : MonoBehaviour
 
         // Convertire i valori del giroscopio in gradi per secondo
         float gyroX = Gx * gyroscopeScaleFactor;
-        float gyroY = Gy * gyroscopeScaleFactor;
+        float gyroY = -Gy * gyroscopeScaleFactor;
         float gyroZ = Gz * gyroscopeScaleFactor;
 
         // Integrare i valori del giroscopio per ottenere l'angolo di rotazione cumulativo (in gradi)
