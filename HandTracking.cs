@@ -7,7 +7,7 @@ using System;
 public class HandTracking : MonoBehaviour
 {
     public UDPReceiver udpReceiver;
-    public GameObject cube;
+    public GameObject handModel;
 
     // Fattore di scala per il giroscopio (ipotizzando ±250°/s)
     private float gyroscopeScaleFactor = 0.00763f;
@@ -16,6 +16,14 @@ public class HandTracking : MonoBehaviour
     private float accumulatedRotationX = 0f;
     private float accumulatedRotationY = 0f;
     private float accumulatedRotationZ = 0f;
+
+    private void Start()
+    {
+        if (handModel != null)
+        {
+            handModel.SetActive(true);
+        }
+    }
 
     void Update()
     {
@@ -42,19 +50,20 @@ public class HandTracking : MonoBehaviour
         float Gz = float.Parse(points[points.Length - 1]);
 
         // Convertire i valori del giroscopio in gradi per secondo
-        float gyroX = Gx * gyroscopeScaleFactor;
-        float gyroY = -Gy * gyroscopeScaleFactor;
-        float gyroZ = -Gz * gyroscopeScaleFactor;
+        float gyroX = -Gy * gyroscopeScaleFactor;
+        float gyroY = -Gz * gyroscopeScaleFactor;
+        float gyroZ = -Gx * gyroscopeScaleFactor;
 
         // Integrare i valori del giroscopio per ottenere l'angolo di rotazione cumulativo (in gradi)
-        accumulatedRotationX = (accumulatedRotationX + gyroX * Time.deltaTime) % 360f;
-        accumulatedRotationY = (accumulatedRotationY + gyroY * Time.deltaTime) % 360f;
-        accumulatedRotationZ = (accumulatedRotationZ + gyroZ * Time.deltaTime) % 360f;
+        accumulatedRotationX += gyroX * Time.deltaTime;
+        accumulatedRotationY += gyroY * Time.deltaTime;
+        accumulatedRotationZ += gyroZ * Time.deltaTime;
 
         // Creare la rotazione target usando i valori integrati
         Quaternion targetRotation = Quaternion.Euler(accumulatedRotationX, accumulatedRotationY, accumulatedRotationZ);
 
         // Applicare la rotazione al cubo
-        cube.transform.rotation = targetRotation;
+        handModel.transform.rotation = targetRotation;
     }
+
 }
