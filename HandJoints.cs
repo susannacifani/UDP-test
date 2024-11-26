@@ -24,6 +24,9 @@ public class HandJoints : MonoBehaviour
     // Flag per verificare se la calibrazione è stata completata
     private bool isCalibrated = false;
 
+    private float smoothSpeed = 15f; // Velocità di interpolazione
+    private float[] currentJointAngles = new float[11]; // Stato attuale per ogni joint
+
     private void Start()
     {
         if (handModel != null)
@@ -69,68 +72,110 @@ public class HandJoints : MonoBehaviour
         float joint11 = float.Parse(points[points.Length - 9]);  // broken_thumb2
         float joint12 = float.Parse(points[points.Length - 8]);  // thumb3
 
-        
+
         // Calcolare l'angolo di rotazione per ciascun joint
         // thumb1
         float joint2_norm = (joint2 - calibratedMinValues[0]) / (calibratedMaxValues[0] - calibratedMinValues[0]);
         float joint2_rotation_angle = joint2_norm * 90;
-        // Limita joint2_rotation_angle tra 0° e 90°
         joint2_rotation_angle = Mathf.Clamp(joint2_rotation_angle, 0, 90);
-        thumbPoints[0].transform.localRotation = Quaternion.Euler(thumbPoints[0].transform.localRotation.eulerAngles.x, thumbPoints[0].transform.localRotation.eulerAngles.y, joint2_rotation_angle);
-        Debug.Log($"joint: {joint2}, Min = {calibratedMinValues[0]:F2}, Max = {calibratedMaxValues[0]:F2}");
-        Debug.Log($"{jointNames[0]}: angle = {joint2_rotation_angle:F2}");
+        currentJointAngles[0] = Mathf.Lerp(currentJointAngles[0], joint2_rotation_angle, Time.deltaTime * smoothSpeed);
+        thumbPoints[0].transform.localRotation = Quaternion.Euler(
+            thumbPoints[0].transform.localRotation.eulerAngles.x,
+            thumbPoints[0].transform.localRotation.eulerAngles.y,
+            currentJointAngles[0]
+        );
 
         // thumb2 broken
         // thumb3
         float joint12_norm = (joint12 - calibratedMinValues[10]) / (calibratedMaxValues[10] - calibratedMinValues[10]);
         float joint12_rotation_angle = joint12_norm * 90;
         joint12_rotation_angle = Mathf.Clamp(joint12_rotation_angle, 0, 90);
-        thumbPoints[1].transform.localRotation = Quaternion.Euler(thumbPoints[1].transform.localRotation.eulerAngles.x, thumbPoints[1].transform.localRotation.eulerAngles.y, joint12_rotation_angle);
+        currentJointAngles[10] = Mathf.Lerp(currentJointAngles[10], joint12_rotation_angle, Time.deltaTime * smoothSpeed);
+        thumbPoints[1].transform.localRotation = Quaternion.Euler(
+            thumbPoints[1].transform.localRotation.eulerAngles.x,
+            thumbPoints[1].transform.localRotation.eulerAngles.y,
+            currentJointAngles[10]
+        );
 
         // index1
         float joint3_norm = (joint3 - calibratedMinValues[1]) / (calibratedMaxValues[1] - calibratedMinValues[1]);
         float joint3_rotation_angle = joint3_norm * 90;
         joint3_rotation_angle = Mathf.Clamp(joint3_rotation_angle, 0, 120);
-        indexPoints[0].transform.localRotation = Quaternion.Euler(joint3_rotation_angle, indexPoints[0].transform.localRotation.eulerAngles.y, indexPoints[0].transform.localRotation.eulerAngles.z);
+        currentJointAngles[1] = Mathf.Lerp(currentJointAngles[1], joint3_rotation_angle, Time.deltaTime * smoothSpeed);
+        indexPoints[0].transform.localRotation = Quaternion.Euler(
+            currentJointAngles[1],
+            indexPoints[0].transform.localRotation.eulerAngles.y,
+            indexPoints[0].transform.localRotation.eulerAngles.z
+        );
 
         // index2
         float joint4_norm = (joint4 - calibratedMinValues[2]) / (calibratedMaxValues[2] - calibratedMinValues[2]);
         float joint4_rotation_angle = joint4_norm * 90;
         joint4_rotation_angle = Mathf.Clamp(joint4_rotation_angle, 0, 90);
-        indexPoints[1].transform.localRotation = Quaternion.Euler(joint4_rotation_angle, indexPoints[1].transform.localRotation.eulerAngles.y, indexPoints[1].transform.localRotation.eulerAngles.z);
-        
+        currentJointAngles[2] = Mathf.Lerp(currentJointAngles[2], joint4_rotation_angle, Time.deltaTime * smoothSpeed);
+        indexPoints[1].transform.localRotation = Quaternion.Euler(
+            currentJointAngles[2],
+            indexPoints[1].transform.localRotation.eulerAngles.y,
+            indexPoints[1].transform.localRotation.eulerAngles.z
+        );
+
         // middle1
         float joint5_norm = (joint5 - calibratedMinValues[3]) / (calibratedMaxValues[3] - calibratedMinValues[3]);
         float joint5_rotation_angle = joint5_norm * 90;
         joint5_rotation_angle = Mathf.Clamp(joint5_rotation_angle, 0, 120);
-        middlePoints[0].transform.localRotation = Quaternion.Euler(joint5_rotation_angle, middlePoints[0].transform.localRotation.eulerAngles.y, middlePoints[0].transform.localRotation.eulerAngles.z);
+        currentJointAngles[3] = Mathf.Lerp(currentJointAngles[3], joint5_rotation_angle, Time.deltaTime * smoothSpeed);
+        middlePoints[0].transform.localRotation = Quaternion.Euler(
+            currentJointAngles[3],
+            middlePoints[0].transform.localRotation.eulerAngles.y,
+            middlePoints[0].transform.localRotation.eulerAngles.z
+        );
 
         // middle2 broken
-        
+
         // ring1
         float joint7_norm = (joint7 - calibratedMinValues[5]) / (calibratedMaxValues[5] - calibratedMinValues[5]);
         float joint7_rotation_angle = joint7_norm * 90;
         joint7_rotation_angle = Mathf.Clamp(joint7_rotation_angle, 0, 120);
-        ringPoints[0].transform.localRotation = Quaternion.Euler(joint7_rotation_angle, ringPoints[0].transform.localRotation.eulerAngles.y, ringPoints[0].transform.localRotation.eulerAngles.z);
-        
+        currentJointAngles[5] = Mathf.Lerp(currentJointAngles[5], joint7_rotation_angle, Time.deltaTime * smoothSpeed);
+        ringPoints[0].transform.localRotation = Quaternion.Euler(
+            currentJointAngles[5],
+            ringPoints[0].transform.localRotation.eulerAngles.y,
+            ringPoints[0].transform.localRotation.eulerAngles.z
+        );
+
         // ring2
         float joint8_norm = (joint8 - calibratedMinValues[6]) / (calibratedMaxValues[6] - calibratedMinValues[6]);
         float joint8_rotation_angle = joint8_norm * 90;
         joint8_rotation_angle = Mathf.Clamp(joint8_rotation_angle, 0, 90);
-        ringPoints[1].transform.localRotation = Quaternion.Euler(joint8_rotation_angle, ringPoints[1].transform.localRotation.eulerAngles.y, ringPoints[1].transform.localRotation.eulerAngles.z);
+        currentJointAngles[6] = Mathf.Lerp(currentJointAngles[6], joint8_rotation_angle, Time.deltaTime * smoothSpeed);
+        ringPoints[1].transform.localRotation = Quaternion.Euler(
+            currentJointAngles[6],
+            ringPoints[1].transform.localRotation.eulerAngles.y,
+            ringPoints[1].transform.localRotation.eulerAngles.z
+        );
 
         // pinky1
         float joint9_norm = (joint9 - calibratedMinValues[7]) / (calibratedMaxValues[7] - calibratedMinValues[7]);
         float joint9_rotation_angle = joint9_norm * 90;
         joint9_rotation_angle = Mathf.Clamp(joint9_rotation_angle, 0, 120);
-        pinkyPoints[0].transform.localRotation = Quaternion.Euler(joint9_rotation_angle, pinkyPoints[0].transform.localRotation.eulerAngles.y, pinkyPoints[0].transform.localRotation.eulerAngles.z);
+        currentJointAngles[7] = Mathf.Lerp(currentJointAngles[7], joint9_rotation_angle, Time.deltaTime * smoothSpeed);
+        pinkyPoints[0].transform.localRotation = Quaternion.Euler(
+            currentJointAngles[7],
+            pinkyPoints[0].transform.localRotation.eulerAngles.y,
+            pinkyPoints[0].transform.localRotation.eulerAngles.z
+        );
 
         // pinky2
         float joint10_norm = (joint10 - calibratedMinValues[8]) / (calibratedMaxValues[8] - calibratedMinValues[8]);
         float joint10_rotation_angle = joint10_norm * 90;
         joint10_rotation_angle = Mathf.Clamp(joint10_rotation_angle, 0, 90);
-        pinkyPoints[1].transform.localRotation = Quaternion.Euler(joint10_rotation_angle, pinkyPoints[1].transform.localRotation.eulerAngles.y, pinkyPoints[1].transform.localRotation.eulerAngles.z);
-        
+        currentJointAngles[8] = Mathf.Lerp(currentJointAngles[8], joint10_rotation_angle, Time.deltaTime * smoothSpeed);
+        pinkyPoints[1].transform.localRotation = Quaternion.Euler(
+            currentJointAngles[8],
+            pinkyPoints[1].transform.localRotation.eulerAngles.y,
+            pinkyPoints[1].transform.localRotation.eulerAngles.z
+        );
+
     }
 
     private IEnumerator CalibrateGlove()
